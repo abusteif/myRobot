@@ -52,5 +52,5 @@ class Mpu6050Control:
             data = self.mpu.get_gyro_data() 
             end = time.time() - b
             d += (data["x"] - self.calibration["x"]) * end
-#             print(d)
+            
         return time.time() - start
