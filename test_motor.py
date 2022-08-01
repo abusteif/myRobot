@@ -5,19 +5,13 @@ from mpu6050_control import Mpu6050Control
 mpu = Mpu6050Control()
 
 m = MovementControl(dc_m_1, dc_m_2, trigger_pin, echo_pin, mpu)
-keep_trying = 3
 
-while keep_trying > 0: 
-    try:
-        m.calibrate(2, 90)
-        break
-    except Exception as e:
-        print(e)
-        keep_trying -= 1
-        pass
+m.calibrate(1)
+        
+
 
 while True:
-    try:
+#     try:
         fun = input("Enter next move (move, stop, steer, angle, straight, calibrate): ")
         if fun == "move":
             speed = int(input("enter speed: "))
@@ -58,9 +52,9 @@ while True:
             m.stop()
             
 
-    except Exception as e:
-        print(e)
-        print("err")
-        m.stop()
-        m.destroy()
+#     except Exception as e:
+#         print(e)
+#         print("err")
+#         m.stop()
+#         m.destroy()
         
