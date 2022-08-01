@@ -3,7 +3,6 @@ import time
 import statistics
 from math import log
 from ultrasonic_control import UltrasonicControl
-import copy
 
 class MovementControl:
     def __init__(self, dc_m_1, dc_m_2, ultrasonic_trig=None, ultrasonic_echo=None, mpu=None, min_distance=40):
@@ -17,10 +16,10 @@ class MovementControl:
         self.distance_check = False
         self.min_distance = min_distance
         
-    def calibrate(self, repeats, max_time = 2):
+    def calibrate(self, repeats, angle, max_time = 2):
         self.calibrate_mpu()
         try:
-            self.calibrate_rotation(repeats, max_time)
+            self.calibrate_rotation(repeats, angle, max_time)
             self.calibrated = True
         except Exception as e:
             print(e)
@@ -28,100 +27,40 @@ class MovementControl:
         
     def calibrate_mpu(self):
         self.mpu.calibrate()
-
-    def calibrate_rotation(self, repeats, max_time=2):
-        
-        times = {
-            "left": {
-                5:[],
-                10:[],
-                15:[],
-                20:[],
-                30:[],
-                40:[],
-                50:[],
-                90:[],
-                180:[]
-                },
-            "right":{
-                5:[],
-                10:[],
-                15:[],
-                20:[],
-                30:[],
-                40:[],
-                50:[],
-                90:[],
-                180:[]
-                }
-            }
-        avgs = copy.deepcopy(times)
-        calibration = copy.deepcopy(times)
+    
+    def calibrate_rotation(self, repeats, angle, max_time=2):
+        times = {"left": [], "right":[]}
+        calibration = {"left": 0, "right":0}
         for d in times:
-            for angle in times[d]:
-                counter = 0
-                while counter < repeats:
-                    self.steer(0, d, 100)
-                    new_time = self.mpu.get_time_by_angle(angle)
-                    self.stop()
-                    if new_time > max_time:
-                        counter -= 1
-                        continue
-                    times[d][angle].append(new_time)
-                    counter += 1
-                    
-                    time.sleep(5)
+            counter = 0
+            while counter < repeats:
+                self.steer(0, d, 100)
+                time.sleep(1)
+                new_time = self.mpu.get_time_by_angle(angle)
+                if new_time > max_time:
+                    counter -= 1
+                    continue
+                times[d].append(new_time)
+                counter += 1
+                a = time.time()
+                self.stop()
+                time.sleep(1)
         classifications = []
-        
-        for d in times:
-            for angle in times[d]:
-                avg = statistics.mean(times[d][angle])
-                avgs[d][angle] = avg
-                for t in times[d][angle]:
-                    classifications.append(t/avg < 0.9)
-                if classifications.count(True) > repeats / 2:
-                    print("Repeat calibration")
-                else:
-                    print("Calibration successful")
-                    calibration[d][angle] = avgs[d][angle] / angle
+        avgs = {"right":0, "left":0}
+        for dire in times:
+            avg = statistics.mean(times[dire])
+            avgs[dire] = avg
+            for t in times[dire]:
+                classifications.append(t/avg < 0.9)
+            if classifications.count(True) > repeats / 2:
+                print("Repeat calibration")
+            else:
+                print("Calibration successful")
+                calibration[dire] = avgs[dire] / angle
         
         self.calibrations = calibration
         print(calibration)
-        return calibration
-    
-#     def calibrate_rotation(self, repeats, angle, max_time=2):
-#         times = {"left": [], "right":[]}
-#         calibration = {"left": 0, "right":0}
-#         for d in times:
-#             counter = 0
-#             while counter < repeats:
-#                 self.steer(0, d, 100)
-#                 time.sleep(1)
-#                 new_time = self.mpu.get_time_by_angle(angle)
-#                 if new_time > max_time:
-#                     counter -= 1
-#                     continue
-#                 times[d].append(new_time)
-#                 counter += 1
-#                 a = time.time()
-#                 self.stop()
-#                 time.sleep(1)
-#         classifications = []
-#         avgs = {"right":0, "left":0}
-#         for dire in times:
-#             avg = statistics.mean(times[dire])
-#             avgs[dire] = avg
-#             for t in times[dire]:
-#                 classifications.append(t/avg < 0.9)
-#             if classifications.count(True) > repeats / 2:
-#                 print("Repeat calibration")
-#             else:
-#                 print("Calibration successful")
-#                 calibration[dire] = avgs[dire] / angle
-#         
-#         self.calibrations = calibration
-#         print(calibration)
-#         return calibration          
+        return calibration          
         
     def steer(self, current_speed, direction, percentage):
         amount = int((100 - percentage) * current_speed * 0.01)
@@ -143,23 +82,13 @@ class MovementControl:
     def steer_by_angle(self, current_speed, direction, angle):
         if not self.calibrated:
             print("Please calibrate first")
-#         correction_factor = 0.00014881 * angle * angle - 0.021131 * angle + 1.73393
-#         if correction_factor < 1 or angle > 70:
-#             correction_factor = 1
-#         print(correction_factor)
+        correction_factor = 0.00014881 * angle * angle - 0.021131 * angle + 1.73393
+        if correction_factor < 1 or angle > 70:
+            correction_factor = 1
+        print(correction_factor)
 #         correction_factor = 0.95 if angle >= 45 else 1.2
 #         correction_factor = 1
-        temp = 0
-        for a in self.calibrations[direction]:
-            if angle >= a:
-                temp = self.calibrations[direction][a]
-                continue
-            if angle <= a:
-                print(a)
-                duration = angle * (temp + self.calibrations[direction][a]) / 2
-                break
-                
-#         duration = self.calibrations[direction] * angle * correction_factor
+        duration = self.calibrations[direction] * angle * correction_factor
         start_time = time.time()
         while time.time() - start_time < duration:
             self.steer(current_speed, direction, 100)
