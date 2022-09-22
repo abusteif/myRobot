@@ -82,7 +82,10 @@ class MovementControl:
     def steer_by_angle(self, current_speed, direction, angle):
         if not self.calibrated:
             print("Please calibrate first")
-        correction_factor = 0.00014881 * angle * angle - 0.021131 * angle + 1.73393
+#         correction_factor = 0.00014881 * angle * angle - 0.021131 * angle + 1.73393
+        correction_factor = 8.9017842 - 1.232475*angle + 0.07679335*angle*angle \
+                            - 0.002029528*angle*angle*angle\
+                            + 0.0000187772*angle*angle*angle*angle
         if correction_factor < 1 or angle > 70:
             correction_factor = 1
         print(correction_factor)

@@ -5,7 +5,7 @@ from mpu6050_control import Mpu6050Control
 mpu = Mpu6050Control()
 
 m = MovementControl(dc_m_1, dc_m_2, trigger_pin, echo_pin, mpu)
-keep_trying = 3
+keep_trying = 2
 
 while keep_trying > 0: 
     try:
@@ -44,6 +44,13 @@ while True:
             args = input("speed,direction,angle: ").split(",")
             m.steer_by_angle(int(args[0]), args[1], int(args[2]))
             m.stop()
+        if fun == "multi":
+            for i in range(9):
+                print(i)
+                m.steer_by_angle(100, "right", 10)
+                m.stop()
+                time.sleep(1)
+
         if fun == "straight":
             speed = int(input("enter speed: "))
             duration = int(input("duration: "))

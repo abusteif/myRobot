@@ -57,6 +57,8 @@ def initiate_motors():
 def steer(m, value, direction):
     print("direction: " +direction + " value: " +str(value))
     if direction == "right" or direction == "left":
+        m.move(100)
+        time.sleep(0.05)
         m.steer_by_angle(100, direction, value)
         m.stop()
         
@@ -228,8 +230,10 @@ while True:
             print("lighting up")
             laser_q.put("on")
             rotation = prepare_to_move_non_middle(current_angle, boxes[box_index], image_width)
+            
             steer(motor, *rotation)
             time.sleep(3)
+            go_straight(motor)
             status = SEARCHING
 #             s_q.put("exit")
             
